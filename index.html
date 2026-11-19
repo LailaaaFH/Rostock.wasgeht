@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rostock.wasgeht</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+
+/* Layout: Hafenband oben (Stadtblau, Greifengelb), darunter Tageskalender als Fahrplan-Leiste, Liste links, Stadtteile rechts */
+:root{
+  --bg:#f2f5f8;
+  --surface:#ffffff;
+  --ink:#0f1f2e;
+  --muted:#58687a;
+  --line:#d7dee6;
+  --harbor:#123a63;      /* Stadtblau */
+  --harbor-ink:#f3f7fb;
+  --griffin:#f2c230;     /* Greifengelb */
+  --brick:#b23a2a;       /* Backstein / Flaggenrot, als Text */
+  --brick-fill:#c0392b;  /* Flaggenrot, als Fläche */
+  --on-brick:#ffffff;
+  --brick-soft:#f7e3df;
+  --chip:#e6ecf2;
+  --font-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --font-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --radius:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b1520;--surface:#122130;--ink:#e7eef5;--muted:#9aabbd;--line:#22364a;
+  --harbor:#0d2c4b;--harbor-ink:#eef4fa;--griffin:#f5cc4a;--brick:#ee8270;--brick-fill:#c13a2c;--on-brick:#ffffff;--brick-soft:#3a1d1c;--chip:#1a2d40;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1520;--surface:#122130;--ink:#e7eef5;--muted:#9aabbd;--line:#22364a;
+  --harbor:#0d2c4b;--harbor-ink:#eef4fa;--griffin:#f5cc4a;--brick:#ee8270;--brick-fill:#c13a2c;--on-brick:#ffffff;--brick-soft:#3a1d1c;--chip:#1a2d40;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--harbor)}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--griffin);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* Kopf */
+.top{background:var(--harbor);color:var(--harbor-ink);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:14px;flex-wrap:wrap}
+.logo{font-family:var(--font-display);font-weight:900;font-size:1.75rem;letter-spacing:.01em;text-decoration:none;line-height:1}
+.logo b{color:var(--griffin)}
+.nav{display:flex;gap:6px 20px;flex-wrap:wrap;font-weight:500;font-size:.95rem}
+.nav a{text-decoration:none;opacity:.85}
+.nav a:hover{opacity:1;text-decoration:underline;text-underline-offset:4px}
+.nav .cta{background:var(--brick-fill);color:var(--on-brick);padding:6px 12px;border-radius:999px;opacity:1;font-weight:600}
+
+/* Hero */
+.hero{background:var(--harbor);color:var(--harbor-ink);position:relative;overflow:hidden;border-bottom:14px solid var(--brick-fill);box-shadow:inset 0 -20px 0 -14px #ffffff}
+/* Stadtflagge Rostock: Blau, Weiß, Rot als Abschluss des Hafenbands */
+.hero .wrap{padding-block:28px 34px;display:grid;gap:22px}
+.eyebrow{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--griffin)}
+.hero h1{font-family:var(--font-display);font-weight:900;text-transform:uppercase;font-size:clamp(2.8rem,8vw,6.2rem);line-height:.88;margin:6px 0 0;letter-spacing:.005em;text-wrap:balance}
+.hero h1 span{color:var(--griffin)}
+.hero p.lead{max-width:56ch;margin:0;font-size:1.08rem;opacity:.9}
+.waves{position:absolute;right:-40px;bottom:-10px;width:460px;max-width:60%;opacity:.16;pointer-events:none}
+.search{display:flex;gap:8px;max-width:620px;flex-wrap:wrap}
+.search input{flex:1 1 240px;min-width:0;font:inherit;padding:12px 14px;border-radius:var(--radius);border:2px solid transparent;background:var(--harbor-ink);color:#0f1f2e}
+.search input:focus{border-color:var(--griffin);outline:none}
+
+/* Fahrplan-Leiste */
+.days{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.day{flex:0 0 auto;min-width:76px;text-align:left;font:inherit;color:inherit;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);border-radius:var(--radius);padding:8px 12px;cursor:pointer}
+.day:hover{background:rgba(255,255,255,.14)}
+.day .dow{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;opacity:.8}
+.day .num{font-family:var(--font-display);font-weight:800;font-size:1.9rem;line-height:1}
+.day .cnt{font-size:.75rem;opacity:.75;font-variant-numeric:tabular-nums}
+.day[aria-pressed="true"]{background:var(--griffin);color:#14202c;border-color:var(--griffin)}
+
+/* Hinweis */
+.notice{font-size:.85rem;color:var(--muted);display:flex;gap:8px;align-items:center;padding-block:14px}
+.notice i{font-style:normal;font-family:var(--font-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;background:var(--brick-soft);color:var(--brick);padding:3px 7px;border-radius:4px}
+
+/* Hauptbereich */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:36px;padding-block:8px 56px}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+.bar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+h2{font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:2rem;line-height:1;margin:0;letter-spacing:.01em}
+h2::after{content:".";color:var(--brick)}
+.result{color:var(--muted);font-size:.9rem;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.chip{font:inherit;font-size:.88rem;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.chip .dot{width:9px;height:9px;border-radius:2px;background:var(--c,var(--muted))}
+.chip[aria-pressed="true"]{background:var(--brick-fill);color:var(--on-brick);border-color:var(--brick-fill)}
+.chip[aria-pressed="true"] .dot{outline:2px solid var(--on-brick)}
+
+/* Terminliste */
+.list{display:grid;gap:0;border-top:3px solid var(--brick-fill)}
+.ev{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:4px 18px;padding:16px 0;border-bottom:1px solid var(--line);align-items:start}
+.ev time{font-family:var(--font-mono);font-weight:700;font-size:1.05rem;color:var(--brick);font-variant-numeric:tabular-nums;padding-top:2px}
+.ev h3{margin:0;font-size:1.12rem;line-height:1.3;font-weight:700;text-wrap:balance}
+.ev .meta{color:var(--muted);font-size:.9rem;margin-top:3px;display:flex;flex-wrap:wrap;gap:2px 14px}
+.ev .stop{font-family:var(--font-mono);font-size:.76rem;letter-spacing:.02em}
+.ev .stop::before{content:"H";display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--griffin);color:#14202c;font-weight:700;font-size:.65rem;margin-right:6px;vertical-align:1px}
+.ev .side{text-align:right;display:grid;gap:6px;justify-items:end}
+.cat{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border-radius:4px;border-left:4px solid var(--c);background:var(--chip);white-space:nowrap}
+.price{font-size:.88rem;font-weight:600;font-variant-numeric:tabular-nums}
+.price.free{color:var(--brick)}
+@media (max-width:560px){
+  .ev{grid-template-columns:56px minmax(0,1fr)}
+  .ev .side{grid-column:2;justify-items:start;text-align:left;grid-auto-flow:column;justify-content:start;align-items:center;gap:10px}
+}
+.empty{padding:28px 0;color:var(--muted);border-bottom:1px solid var(--line)}
+.empty button{font:inherit;color:var(--ink);background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
+
+/* Seitenleiste */
+aside{display:grid;gap:28px;align-content:start}
+.panel h2{font-size:1.5rem;margin-bottom:10px}
+.districts{display:grid;gap:0;border-top:3px solid var(--brick-fill)}
+.district{font:inherit;color:inherit;background:none;border:0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;padding:9px 2px;cursor:pointer;text-align:left}
+.district:hover span:first-child{text-decoration:underline;text-underline-offset:3px}
+.district span:last-child{font-family:var(--font-mono);font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.district[aria-pressed="true"]{font-weight:700}
+.district[aria-pressed="true"] span:last-child{color:var(--brick)}
+.district[aria-pressed="true"] span:first-child::before{content:"";display:inline-block;width:8px;height:8px;background:var(--brick-fill);border-radius:50%;margin-right:8px;vertical-align:2px}
+
+.submit{background:var(--surface);border:1px solid var(--line);border-top:6px solid var(--brick-fill);border-radius:var(--radius);padding:20px}
+.submit p{margin:4px 0 14px;color:var(--muted);font-size:.92rem}
+.submit form{display:grid;gap:10px}
+.submit label{font-size:.8rem;font-weight:600;display:grid;gap:4px}
+.submit input,.submit select{font:inherit;font-weight:400;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{font:inherit;font-weight:700;background:var(--brick-fill);color:var(--on-brick);border:0;padding:11px 14px;border-radius:8px;cursor:pointer}
+.btn:hover{filter:brightness(1.15)}
+.ok{font-size:.88rem;background:var(--chip);padding:10px 12px;border-radius:8px;margin:0}
+
+/* Fuß */
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:.88rem}
+footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:24px}
+footer nav{display:flex;gap:18px;flex-wrap:wrap}
+footer .logo{font-size:1.2rem;color:var(--ink)}
+footer .logo b{color:var(--brick)}
+
+.nav a[aria-current="page"]{opacity:1;text-decoration:underline;text-decoration-color:var(--brick-fill);text-decoration-thickness:3px;text-underline-offset:6px}
+
+/* Jahreskalender: Hafenband mit Jahreszahl, darunter klebende Monatsleiste, Monate untereinander (Raster links, Tagesdetails rechts) */
+.yhero{background:var(--harbor);color:var(--harbor-ink);border-bottom:14px solid var(--brick-fill);box-shadow:inset 0 -20px 0 -14px #ffffff}
+.yhero .wrap{padding-block:24px 30px;display:grid;gap:14px}
+.yhead{display:flex;align-items:flex-end;gap:12px 20px;flex-wrap:wrap}
+.yhero h1{font-family:var(--font-display);font-weight:900;font-size:clamp(3.2rem,9vw,6rem);line-height:.85;margin:4px 0 0;font-variant-numeric:tabular-nums}
+.yhero p{margin:0;max-width:56ch;opacity:.9}
+.ynav{display:flex;gap:8px;padding-bottom:6px}
+.ybtn{font:inherit;font-weight:600;font-size:.9rem;color:inherit;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:6px 14px;cursor:pointer}
+.ybtn:hover{background:rgba(255,255,255,.18)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.85rem;opacity:.92}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.legend .hlmark{width:22px;height:10px;background:var(--brick-fill);border-radius:3px;outline:1px solid rgba(255,255,255,.6)}
+.ybar{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--hdr,60px));z-index:4;background:var(--bg);border-bottom:1px solid var(--line)}
+.ybar .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:thin}
+.mchip{flex:0 0 auto;font:inherit;font-size:.85rem;font-weight:600;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.mchip:hover{border-color:var(--ink)}
+.mchip[aria-current="true"]{background:var(--brick-fill);border-color:var(--brick-fill);color:var(--on-brick)}
+.mchip.jump{background:var(--harbor);border-color:var(--harbor);color:var(--harbor-ink)}
+.months{display:grid;gap:52px;padding-block:8px 64px}
+.month{scroll-margin-top:calc(env(safe-area-inset-top,0px) + var(--stick,120px));display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px 40px;align-items:start}
+@media (max-width:820px){.month{grid-template-columns:minmax(0,1fr)}}
+.mhead{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-bottom:3px solid var(--brick-fill);padding-bottom:6px}
+.mhead h2{font-size:2.6rem}
+.mhead span{color:var(--muted);font-size:.9rem;font-variant-numeric:tabular-nums}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wd{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;padding-bottom:2px}
+.dcell{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;min-height:84px;max-width:100%;min-width:0;padding:5px;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:3px;cursor:pointer;text-align:left}
+.dcell .n{font-weight:600;font-size:.95rem;line-height:1;font-variant-numeric:tabular-nums}
+.dcell .n{margin-bottom:2px}
+.tb{display:block;min-width:0;font-size:.66rem;line-height:1.3;font-weight:600;padding:1px 4px;border-radius:3px;border-left:3px solid var(--c);background:color-mix(in srgb,var(--c) 16%,var(--surface));color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb.big{background:var(--brick-fill);border-left-color:var(--brick-fill);color:var(--on-brick)}
+.more{font-size:.62rem;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1}
+.dcell[aria-pressed="true"] .more{color:var(--harbor-ink)}
+@media (max-width:560px){.dcell{min-height:64px;padding:4px 3px}.tb{font-size:0;height:6px;padding:0;border-left-width:0;background:var(--c)}.tb.big{background:var(--brick-fill)}.more{font-size:.58rem}}
+.dcell.we{background:var(--chip)}
+.dcell.past{opacity:.5}
+.dcell.today{border:2px solid var(--brick-fill)}
+.dcell.today .n{color:var(--brick)}
+.dcell:hover{border-color:var(--ink)}
+.dcell[aria-pressed="true"]{background:var(--harbor);color:var(--harbor-ink);border-color:var(--harbor);opacity:1}
+.dcell[aria-pressed="true"] .n{color:var(--harbor-ink)}
+.mside > h3{font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:1.35rem;line-height:1.1;margin:0 0 8px}
+.mside .ev{grid-template-columns:64px minmax(0,1fr) auto;padding:11px 0;animation:none}
+.mside .ev time{font-size:.92rem}
+.mside .hint{color:var(--muted);font-size:.86rem;margin:10px 0 0}
+.mside .hint button{font:inherit;color:var(--ink);background:none;border:0;padding:0;text-decoration:underline;cursor:pointer}
+@media (max-width:560px){.mside .ev{grid-template-columns:52px minmax(0,1fr)}}
+
+/* Jahreskalender: Ansicht wechseln und Filter */
+.ytools{display:grid;gap:10px;padding-block:18px 2px}
+.trow{display:flex;gap:8px 10px;flex-wrap:wrap;align-items:center}
+.tlabel{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);min-width:86px}
+.ytools .chips{margin:0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:var(--surface);padding:3px}
+.seg button{font:inherit;font-weight:600;font-size:.9rem;border:0;background:none;color:var(--ink);padding:6px 16px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--harbor);color:var(--harbor-ink)}
+.ysearch{flex:1 1 220px;max-width:420px;min-width:0;font:inherit;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink)}
+.ycount{color:var(--muted);font-size:.88rem;font-variant-numeric:tabular-nums}
+.ycount button{font:inherit;color:var(--brick);background:none;border:0;padding:0;margin-left:8px;text-decoration:underline;cursor:pointer}
+.month.as-list{grid-template-columns:minmax(0,1fr)}
+.lday{display:grid;grid-template-columns:130px minmax(0,1fr);gap:0 20px;border-bottom:1px solid var(--line)}
+.lday .dl{padding-top:16px;font-family:var(--font-mono);font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.lday .dl b{display:block;font-family:var(--font-display);font-size:1.7rem;line-height:1;color:var(--ink);letter-spacing:0}
+.lday.today .dl b,.lday.today .dl{color:var(--brick)}
+.lday.past{opacity:.55}
+.lday .ev{border-bottom:1px dashed var(--line);animation:none}
+.lday .ev:last-child{border-bottom:0}
+.lday .ev.big h3{color:var(--brick)}
+.lempty{color:var(--muted);margin:0;padding-block:8px}
+@media (max-width:560px){.lday{grid-template-columns:minmax(0,1fr)}.lday .dl{padding-top:12px;display:flex;align-items:baseline;gap:8px}.lday .dl b{display:inline;font-size:1.3rem}}
+
+@media (prefers-reduced-motion:no-preference){
+  .ev{animation:rise .35s ease both}
+  @keyframes rise{from{transform:translateY(4px)}to{transform:none}}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#kalender">Rostock<b>.</b>wasgeht</a>
+    <nav class="nav" aria-label="Hauptnavigation">
+      <a href="#kalender" id="navWeek">Diese Woche</a>
+      <a href="#jahr" id="navYear">Jahreskalender</a>
+      <a href="#stadtteile">Stadtteile</a>
+      <a class="cta" href="#eintragen">Termin eintragen</a>
+    </nav>
+  </div>
+</header>
+
+<main id="viewYear" hidden>
+  <section class="yhero">
+    <div class="wrap">
+      <div class="yhead">
+        <div>
+          <div class="eyebrow">Jahreskalender</div>
+          <h1 id="yTitle">2026</h1>
+        </div>
+        <div class="ynav">
+          <button class="ybtn" type="button" id="yPrev">← <span id="yPrevL">2025</span></button>
+          <button class="ybtn" type="button" id="yNext"><span id="yNextL">2027</span> →</button>
+        </div>
+      </div>
+      <p>Alle Termine des Jahres, Monat für Monat. Tippe auf einen Tag, um zu sehen, was dort los ist.</p>
+      <div class="legend" id="legend"></div>
+    </div>
+  </section>
+  <nav class="ybar" aria-label="Monat wählen"><div class="wrap" id="mchips"></div></nav>
+  <div class="wrap">
+    <div class="ytools">
+      <div class="trow">
+        <div class="seg" role="group" aria-label="Ansicht">
+          <button type="button" id="modeMonth" aria-pressed="true">Monate</button>
+          <button type="button" id="modeList" aria-pressed="false">Liste</button>
+        </div>
+        <label for="yq" class="tlabel" style="min-width:0;position:absolute;left:-9999px">Suchen</label>
+        <input id="yq" class="ysearch" type="search" placeholder="Suchen, z. B. Hanse Sail" autocomplete="off">
+        <span class="ycount" id="ycount"></span>
+      </div>
+      <div class="trow"><span class="tlabel">Kategorie</span><div class="chips" id="ycats" role="group" aria-label="Kategorie"></div></div>
+      <div class="trow"><span class="tlabel">Stadtteil</span><div class="chips" id="ydists" role="group" aria-label="Stadtteil"></div></div>
+    </div>
+    <div class="notice"><i>Vorschau</i> Auch im Jahreskalender sind alle Termine Beispiele. Größere Feste stehen an ihrem üblichen Zeitraum, ohne Gewähr.</div>
+    <div class="months" id="months"></div>
+  </div>
+</main>
+
+<div id="viewHome">
+<section class="hero" id="kalender">
+  <svg class="waves" viewBox="0 0 460 200" aria-hidden="true">
+    <g fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round">
+      <path d="M0 40 Q 38 10 76 40 T 152 40 T 228 40 T 304 40 T 380 40 T 456 40"/>
+      <path d="M0 95 Q 38 65 76 95 T 152 95 T 228 95 T 304 95 T 380 95 T 456 95"/>
+      <path d="M0 150 Q 38 120 76 150 T 152 150 T 228 150 T 304 150 T 380 150 T 456 150"/>
+    </g>
+  </svg>
+  <div class="wrap">
+    <div>
+      <div class="eyebrow" id="todayLabel">Hansestadt Rostock</div>
+      <h1>Was geht <span id="heroWhen">heute</span><br>in Rostock?</h1>
+    </div>
+    <p class="lead">Konzerte, Theater, Kino, Märkte und alles dazwischen. Von der KTV über die Südstadt bis Warnemünde, alles an einem Ort.</p>
+    <form class="search" role="search" id="searchForm">
+      <label for="q" class="eyebrow" style="flex-basis:100%;color:inherit;opacity:.8">Suchen</label>
+      <input id="q" type="search" placeholder="Band, Ort oder Stichwort, z. B. Quiz" autocomplete="off">
+    </form>
+    <div class="days" id="days" role="group" aria-label="Tag wählen"></div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="notice"><i>Vorschau</i> Die Termine auf dieser Seite sind Beispiele und noch keine echten Veranstaltungen.</div>
+  <div class="main">
+    <section aria-labelledby="listHead">
+      <div class="bar">
+        <h2 id="listHead">Heute</h2>
+        <span class="result" id="result"></span>
+      </div>
+      <div class="chips" id="cats" role="group" aria-label="Kategorie"></div>
+      <div class="list" id="list" aria-live="polite"></div>
+    </section>
+
+    <aside>
+      <div class="panel" id="stadtteile">
+        <h2>Stadtteile</h2>
+        <div class="districts" id="districts" role="group" aria-label="Stadtteil"></div>
+      </div>
+
+      <div class="submit" id="eintragen">
+        <h2 style="font-size:1.5rem">Termin eintragen</h2>
+        <p>Du veranstaltest etwas in Rostock? Schick uns die Eckdaten, wir nehmen es nach kurzer Prüfung in den Kalender auf.</p>
+        <form id="submitForm">
+          <label for="fTitle">Was?<input id="fTitle" required placeholder="z. B. Lesung mit Musik"></label>
+          <label for="fVenue">Wo?<input id="fVenue" required placeholder="Ort und Adresse"></label>
+          <div class="row2">
+            <label for="fDate">Datum<input id="fDate" type="date" required></label>
+            <label for="fTime">Beginn<input id="fTime" type="time" required></label>
+          </div>
+          <label for="fCat">Kategorie<select id="fCat"></select></label>
+          <button class="btn" type="submit">Termin vorschlagen</button>
+          <p class="ok" id="ok" hidden>In dieser Vorschau wird noch nichts gespeichert. Sobald das Formular angebunden ist, landet dein Termin hier zur Prüfung.</p>
+        </form>
+      </div>
+    </aside>
+  </div>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span class="logo">Rostock<b>.</b>wasgeht</span>
+    <nav aria-label="Rechtliches">
+      <a href="#kalender">Diese Woche</a>
+      <a href="#jahr">Jahreskalender</a>
+      <a href="#eintragen">Für Veranstalter</a>
+      <span>Impressum</span>
+      <span>Datenschutz</span>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var CATS={
+    Musik:"#2f7dd1", Bühne:"#b23a2a", Kino:"#7a4bc2", Kunst:"#c2861a",
+    Party:"#d0367a", Familie:"#2e9a6a", Draußen:"#1b8fa0", Markt:"#8a6a3a", Sport:"#ef6c00"
+  };
+  // d = Tag relativ zu heute (0 = heute). Alles Beispieldaten.
+  var EVENTS=[
+    {d:0,t:"18:30",title:"Feierabend-Führung durch die Marienkirche",venue:"St. Marien",dist:"Stadtmitte",cat:"Kunst",price:"6 €",stop:"Neuer Markt"},
+    {d:0,t:"19:30",title:"Kneipenquiz: Sechs Runden, ein Tresen",venue:"Kneipe in der KTV",dist:"KTV",cat:"Party",price:"frei",stop:"Doberaner Platz"},
+    {d:0,t:"20:00",title:"Der zerbrochne Krug",venue:"Volkstheater, Großes Haus",dist:"KTV",cat:"Bühne",price:"ab 14 €",stop:"Doberaner Platz"},
+    {d:0,t:"20:15",title:"Nordische Kurzfilme im Original",venue:"Programmkino",dist:"Stadtmitte",cat:"Kino",price:"8 €",stop:"Lange Straße"},
+    {d:1,t:"18:00",title:"Lauftreff: 5 km am Stadthafen",venue:"Treffpunkt Stadthafen",dist:"Stadtmitte",cat:"Sport",price:"frei",stop:"Lange Straße"},
+    {d:1,t:"16:00",title:"Bastelnachmittag: Laternen aus Altpapier",venue:"Stadtteilbibliothek",dist:"Südstadt",cat:"Familie",price:"frei",stop:"Südblick"},
+    {d:1,t:"20:00",title:"Open Stage: Songwriter und Spoken Word",venue:"Peter-Weiss-Haus",dist:"KTV",cat:"Musik",price:"Spende",stop:"Doberaner Platz"},
+    {d:1,t:"21:00",title:"Jazz-Session im Keller",venue:"Kulturkneipe",dist:"Stadtmitte",cat:"Musik",price:"5 €",stop:"Steintor"},
+    {d:2,t:"10:00",title:"Wochenmarkt am Doberaner Platz",venue:"Doberaner Platz",dist:"KTV",cat:"Markt",price:"frei",stop:"Doberaner Platz"},
+    {d:2,t:"19:00",title:"Ausstellungseröffnung: Licht über der Warnow",venue:"Kunsthalle",dist:"Reutershagen",cat:"Kunst",price:"frei",stop:"Kunsthalle"},
+    {d:2,t:"20:30",title:"Indie-Doppelkonzert",venue:"Clubbühne am Hafen",dist:"Stadtmitte",cat:"Musik",price:"18 €",stop:"Lange Straße"},
+    {d:3,t:"14:00",title:"Strandspaziergang mit Ranger: Wintervögel an der Mole",venue:"Westmole",dist:"Warnemünde",cat:"Draußen",price:"frei",stop:"S Warnemünde"},
+    {d:3,t:"19:00",title:"Basketball: Heimspiel in der Stadthalle",venue:"Stadthalle",dist:"Südstadt",cat:"Sport",price:"ab 15 €",stop:"Hauptbahnhof"},
+    {d:3,t:"19:30",title:"Poetry Slam: Hanse gegen Rest",venue:"Studentenkeller",dist:"Stadtmitte",cat:"Bühne",price:"7 €",stop:"Steintor"},
+    {d:3,t:"23:00",title:"Techno bis zur ersten Fähre",venue:"Club im Hafenspeicher",dist:"Stadtmitte",cat:"Party",price:"12 €",stop:"Lange Straße"},
+    {d:4,t:"10:00",title:"Hallenfußball-Turnier der Jugend",venue:"Sporthalle",dist:"Lütten Klein",cat:"Sport",price:"frei",stop:"Lütten Klein Zentrum"},
+    {d:4,t:"11:00",title:"Flohmarkt in der Halle",venue:"Markthalle",dist:"Lütten Klein",cat:"Markt",price:"frei",stop:"Lütten Klein Zentrum"},
+    {d:4,t:"15:00",title:"Puppentheater: Der kleine Lotse",venue:"Kindertheater",dist:"Südstadt",cat:"Familie",price:"6 €",stop:"Südblick"},
+    {d:4,t:"19:00",title:"Lichtfahrt auf der Warnow",venue:"Anleger Stadthafen",dist:"Stadtmitte",cat:"Draußen",price:"15 €",stop:"Lange Straße"},
+    {d:4,t:"20:00",title:"Kammerkonzert: Streichquartett",venue:"Konzertsaal",dist:"Stadtmitte",cat:"Musik",price:"ab 12 €",stop:"Neuer Markt"},
+    {d:4,t:"22:00",title:"Achtziger-Party",venue:"Tanzlokal",dist:"Reutershagen",cat:"Party",price:"8 €",stop:"Holbeinplatz"},
+    {d:5,t:"10:30",title:"Familienkino am Sonntag",venue:"Programmkino",dist:"Stadtmitte",cat:"Kino",price:"5 €",stop:"Lange Straße"},
+    {d:5,t:"13:00",title:"Fährüberfahrt und Spaziergang Gehlsdorf",venue:"Fähranleger Kabutzenhof",dist:"Gehlsdorf",cat:"Draußen",price:"frei",stop:"Kabutzenhof"},
+    {d:5,t:"17:00",title:"Orgelvesper",venue:"Nikolaikirche",dist:"Stadtmitte",cat:"Musik",price:"Spende",stop:"Steintor"},
+    {d:6,t:"11:00",title:"Weihnachtsmarkt öffnet",venue:"Kröpeliner Straße bis Neuer Markt",dist:"Stadtmitte",cat:"Markt",price:"frei",stop:"Kröpeliner Tor"},
+    {d:6,t:"19:30",title:"Filmgespräch: Dokumentarfilm aus Mecklenburg",venue:"Kino im Stadtteilzentrum",dist:"Evershagen",cat:"Kino",price:"6 €",stop:"Evershagen"}
+  ];
+  var DISTRICTS=["Stadtmitte","KTV","Warnemünde","Südstadt","Reutershagen","Gehlsdorf","Lütten Klein","Evershagen"];
+  var DOW=["So","Mo","Di","Mi","Do","Fr","Sa"];
+  var DOWL=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+  var MON=["Jan.","Feb.","März","Apr.","Mai","Juni","Juli","Aug.","Sept.","Okt.","Nov.","Dez."];
+  var MONL=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+
+  var state={day:0,cat:null,dist:null,q:""};
+  var today=new Date(); today.setHours(0,0,0,0);
+  function dateFor(o){var d=new Date(today);d.setDate(d.getDate()+o);return d}
+  function dayName(o){return o===0?"Heute":o===1?"Morgen":DOWL[dateFor(o).getDay()]}
+  var $=function(id){return document.getElementById(id)};
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+
+  var t=today;
+  $("todayLabel").textContent=DOWL[t.getDay()]+", "+t.getDate()+". "+MONL[t.getMonth()]+" "+t.getFullYear();
+
+  function matches(e,ignore){
+    if(ignore!=="day"&&e.d!==state.day)return false;
+    if(ignore!=="cat"&&state.cat&&e.cat!==state.cat)return false;
+    if(ignore!=="dist"&&state.dist&&e.dist!==state.dist)return false;
+    if(state.q){var h=(e.title+" "+e.venue+" "+e.dist+" "+e.cat).toLowerCase();if(h.indexOf(state.q)<0)return false}
+    return true;
+  }
+
+  function renderDays(){
+    var html="";
+    for(var o=0;o<7;o++){
+      var d=dateFor(o),n=EVENTS.filter(function(e){return e.d===o&&matches(e,"day")}).length;
+      html+='<button class="day" type="button" data-o="'+o+'" aria-pressed="'+(state.day===o)+'">'+
+        '<div class="dow">'+(o===0?"Heute":DOW[d.getDay()])+'</div>'+
+        '<div class="num">'+d.getDate()+'</div>'+
+        '<div class="cnt">'+n+(n===1?" Termin":" Termine")+'</div></button>';
+    }
+    $("days").innerHTML=html;
+  }
+  function renderCats(){
+    var html='<button class="chip" type="button" data-c="" aria-pressed="'+(!state.cat)+'">Alles</button>';
+    Object.keys(CATS).forEach(function(c){
+      html+='<button class="chip" type="button" data-c="'+c+'" aria-pressed="'+(state.cat===c)+'" style="--c:'+CATS[c]+'"><span class="dot"></span>'+c+'</button>';
+    });
+    $("cats").innerHTML=html;
+  }
+  function renderDistricts(){
+    var html='<button class="district" type="button" data-s="" aria-pressed="'+(!state.dist)+'"><span>Ganz Rostock</span><span>'+EVENTS.filter(function(e){return matches(e,"dist")}).length+'</span></button>';
+    DISTRICTS.forEach(function(s){
+      var n=EVENTS.filter(function(e){return e.dist===s&&matches(e,"dist")}).length;
+      html+='<button class="district" type="button" data-s="'+s+'" aria-pressed="'+(state.dist===s)+'"><span>'+s+'</span><span>'+n+'</span></button>';
+    });
+    $("districts").innerHTML=html;
+  }
+  function renderList(){
+    var items=EVENTS.filter(function(e){return matches(e)}).sort(function(a,b){return a.t<b.t?-1:1});
+    var d=dateFor(state.day);
+    $("listHead").textContent=dayName(state.day)+", "+d.getDate()+". "+MON[d.getMonth()];
+    $("heroWhen").textContent=state.day===0?"heute":state.day===1?"morgen":"am "+DOWL[d.getDay()];
+    $("result").textContent=items.length+(items.length===1?" Termin":" Termine")+(state.dist?" in "+state.dist:"");
+    if(!items.length){
+      $("list").innerHTML='<div class="empty">Für diese Auswahl ist noch nichts eingetragen. <button type="button" id="reset">Filter zurücksetzen</button></div>';
+      return;
+    }
+    $("list").innerHTML=items.map(function(e){
+      var free=e.price==="frei";
+      return '<article class="ev"><time>'+e.t+'</time><div><h3>'+esc(e.title)+'</h3>'+
+        '<div class="meta"><span>'+esc(e.venue)+' · '+esc(e.dist)+'</span><span class="stop">'+esc(e.stop)+'</span></div></div>'+
+        '<div class="side"><span class="cat" style="--c:'+CATS[e.cat]+'">'+e.cat+'</span>'+
+        '<span class="price'+(free?' free':'')+'">'+(free?'Eintritt frei':esc(e.price))+'</span></div></article>';
+    }).join("");
+  }
+  function render(){renderDays();renderCats();renderDistricts();renderList()}
+
+  $("days").addEventListener("click",function(ev){var b=ev.target.closest(".day");if(!b)return;state.day=+b.dataset.o;render()});
+  $("cats").addEventListener("click",function(ev){var b=ev.target.closest(".chip");if(!b)return;state.cat=b.dataset.c||null;render()});
+  $("districts").addEventListener("click",function(ev){var b=ev.target.closest(".district");if(!b)return;state.dist=b.dataset.s||null;render()});
+  $("list").addEventListener("click",function(ev){if(ev.target.id==="reset"){state.cat=null;state.dist=null;state.q="";$("q").value="";render()}});
+  $("q").addEventListener("input",function(){state.q=this.value.trim().toLowerCase();render()});
+  $("searchForm").addEventListener("submit",function(e){e.preventDefault()});
+
+  $("fCat").innerHTML=Object.keys(CATS).map(function(c){return '<option>'+c+'</option>'}).join("");
+  $("submitForm").addEventListener("submit",function(e){e.preventDefault();$("ok").hidden=false});
+
+  render();
+
+  /* ---------- Jahreskalender ---------- */
+  var WD=["Mo","Di","Mi","Do","Fr","Sa","So"];
+  var MSHORT=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+  var year=today.getFullYear(), yData={}, sel={}, curM=today.getMonth();
+  var yf={cat:null,dist:null,q:"",mode:"monate"};
+  try{var sm=localStorage.getItem("rw-mode");if(sm==="liste")yf.mode="liste"}catch(e){}
+  function pass(e){
+    if(yf.cat&&e.cat!==yf.cat)return false;
+    if(yf.dist&&e.dist!==yf.dist)return false;
+    if(yf.q&&(e.title+" "+e.venue+" "+e.dist+" "+e.cat).toLowerCase().indexOf(yf.q)<0)return false;
+    return true;
+  }
+  function fl(k){return (yData[k]||[]).filter(pass)}
+  function filtered(){return yf.cat||yf.dist||yf.q}
+  function key(d){return d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate()}
+  function nthWd(Y,m,wd,n){var d=new Date(Y,m,1);while(d.getDay()!==wd)d.setDate(d.getDate()+1);d.setDate(d.getDate()+7*(n-1));return d}
+  function lastWd(Y,m,wd){var d=new Date(Y,m+1,0);while(d.getDay()!==wd)d.setDate(d.getDate()-1);return d}
+  function plus(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x}
+  function fmtRange(a,b){
+    if(+a===+b)return a.getDate()+". "+MONL[a.getMonth()];
+    return a.getMonth()===b.getMonth()?a.getDate()+".–"+b.getDate()+". "+MONL[b.getMonth()]
+      :a.getDate()+". "+MONL[a.getMonth()]+" – "+b.getDate()+". "+MONL[b.getMonth()];
+  }
+  function highlights(Y){
+    var sail=nthWd(Y,7,6,2), ww=nthWd(Y,6,6,1), tot=new Date(Y,10,26);
+    while(tot.getDay()!==0)tot.setDate(tot.getDate()-1);
+    return [
+      {s:new Date(Y,0,1),e:new Date(Y,0,1),t:"18:00",title:"Turmleuchten am Leuchtturm",venue:"Leuchtturm Warnemünde",dist:"Warnemünde",cat:"Draußen"},
+      {s:nthWd(Y,2,6,3),e:nthWd(Y,2,6,3),t:"10:00",title:"Frühjahrsputz am Strand",venue:"Strandaufgang 6",dist:"Warnemünde",cat:"Draußen"},
+      {s:lastWd(Y,3,6),e:lastWd(Y,3,6),t:"09:00",title:"Großer Frühjahrsflohmarkt",venue:"Stadthafen",dist:"Stadtmitte",cat:"Markt"},
+      {s:nthWd(Y,4,6,2),e:nthWd(Y,4,6,2),t:"17:00",title:"Nacht der offenen Ateliers",venue:"Ateliers in der KTV",dist:"KTV",cat:"Kunst"},
+      {s:nthWd(Y,5,6,1),e:nthWd(Y,5,6,1),t:"10:00",title:"Stadtlauf durch die Altstadt",venue:"Start am Neuen Markt",dist:"Stadtmitte",cat:"Sport"},
+      {s:new Date(Y,5,21),e:new Date(Y,5,21),t:"15:00",title:"Fête de la Musique",venue:"Bühnen in der Innenstadt",dist:"Stadtmitte",cat:"Musik"},
+      {s:ww,e:plus(ww,8),t:"ganztägig",title:"Warnemünder Woche",venue:"Alter Strom und Strand",dist:"Warnemünde",cat:"Draußen"},
+      {s:nthWd(Y,6,6,3),e:plus(nthWd(Y,6,6,3),1),t:"10:00",title:"Beachvolleyball-Turnier",venue:"Strand am Leuchtturm",dist:"Warnemünde",cat:"Sport"},
+      {s:plus(sail,-2),e:plus(sail,1),t:"ganztägig",title:"Hanse Sail",venue:"Stadthafen und Warnemünde",dist:"Stadtmitte",cat:"Draußen"},
+      {s:nthWd(Y,8,0,2),e:nthWd(Y,8,0,2),t:"10:00",title:"Tag des offenen Denkmals",venue:"Denkmäler in der ganzen Stadt",dist:"Stadtmitte",cat:"Kunst"},
+      {s:nthWd(Y,9,1,3),e:plus(nthWd(Y,9,1,3),4),t:"10:00",title:"Theaterwoche in den Herbstferien",venue:"Kindertheater",dist:"Südstadt",cat:"Familie"},
+      {s:plus(tot,1),e:new Date(Y,11,22),t:"11:00",title:"Weihnachtsmarkt",venue:"Kröpeliner Straße bis Neuer Markt",dist:"Stadtmitte",cat:"Markt"},
+      {s:new Date(Y,11,31),e:new Date(Y,11,31),t:"22:00",title:"Silvester am Strand",venue:"Strandpromenade",dist:"Warnemünde",cat:"Party"}
+    ];
+  }
+  function buildYear(Y){
+    var map={};
+    function add(d,ev){var k=key(d);(map[k]=map[k]||[]).push(ev)}
+    for(var d=new Date(Y,0,1);d.getFullYear()===Y;d=plus(d,1)){
+      var wd=d.getDay(), m=d.getMonth(), dom=d.getDate();
+      if(wd===3)add(d,{t:"18:00",title:"Lauftreff am Stadthafen",venue:"Treffpunkt Stadthafen",dist:"Stadtmitte",cat:"Sport"});
+      if(wd===2)add(d,{t:"19:30",title:"Kneipenquiz",venue:"Kneipe in der KTV",dist:"KTV",cat:"Party"});
+      if(wd===6)add(d,{t:"08:00",title:"Wochenmarkt",venue:"Doberaner Platz",dist:"KTV",cat:"Markt"});
+      if(wd===0&&dom<=7)add(d,{t:"10:30",title:"Familienkino am Sonntag",venue:"Programmkino",dist:"Stadtmitte",cat:"Kino"});
+      if(wd===4&&dom>7&&dom<=14)add(d,{t:"20:00",title:"Open Stage",venue:"Peter-Weiss-Haus",dist:"KTV",cat:"Musik"});
+      if(wd===5&&+d===+lastWd(Y,m,5))add(d,{t:"23:00",title:"Clubnacht",venue:"Club im Hafenspeicher",dist:"Stadtmitte",cat:"Party"});
+      if(wd===5&&(m===6||m===7))add(d,{t:"21:30",title:"Sommerkino im Stadthafen",venue:"Stadthafen",dist:"Stadtmitte",cat:"Kino"});
+    }
+    highlights(Y).forEach(function(h){
+      for(var x=new Date(h.s);x<=h.e;x=plus(x,1))add(x,{t:h.t,title:h.title,venue:h.venue,dist:h.dist,cat:h.cat,hl:true,range:fmtRange(h.s,h.e),s:h.s});
+    });
+    EVENTS.forEach(function(e){var x=dateFor(e.d);if(x.getFullYear()===Y&&e.title.indexOf("Weihnachtsmarkt")<0)add(x,e)});
+    Object.keys(map).forEach(function(k){map[k].sort(function(a,b){return (b.hl?1:0)-(a.hl?1:0)||(a.t<b.t?-1:1)})});
+    return map;
+  }
+  function evRow(e,timeLabel){
+    return '<article class="ev"><time>'+esc(timeLabel)+'</time><div><h3>'+esc(e.title)+'</h3>'+
+      '<div class="meta"><span>'+esc(e.venue)+' · '+esc(e.dist)+'</span>'+(e.range?'<span>'+esc(e.range)+'</span>':'')+'</div></div>'+
+      '<div class="side"><span class="cat" style="--c:'+CATS[e.cat]+'">'+e.cat+'</span></div></article>';
+  }
+  function monthSide(m){
+    var k=sel[m];
+    if(k&&fl(k).length){
+      var p=k.split("-"), d=new Date(+p[0],+p[1],+p[2]), list=fl(k);
+      return '<h3>'+DOWL[d.getDay()]+', '+d.getDate()+'. '+MONL[m]+'</h3><div class="list">'+
+        list.map(function(e){return evRow(e,e.t==="ganztägig"?"ganzt.":e.t)}).join("")+
+        '</div><p class="hint"><button type="button" data-back="'+m+'">Zurück zu den Höhepunkten im '+MONL[m]+'</button></p>';
+    }
+    var seen={}, hl=[];
+    Object.keys(yData).forEach(function(kk){
+      if(+kk.split("-")[1]!==m)return;
+      fl(kk).forEach(function(e){if(e.hl&&!seen[e.title]){seen[e.title]=1;hl.push(e)}});
+    });
+    hl.sort(function(a,b){return a.s-b.s});
+    if(!hl.length)return '<h3>Im '+MONL[m]+'</h3><p class="hint" style="margin-top:0">'+(filtered()?'Keine großen Feste passen zu deinen Filtern. Wähle einen Tag im Kalender.':'Keine großen Feste in diesem Monat, dafür jede Woche Quiz, Markt, Kino und Konzerte. Wähle einen Tag im Kalender.')+'</p>';
+    return '<h3>Höhepunkte im '+MONL[m]+'</h3><div class="list">'+
+      hl.map(function(e){var s=e.s;return evRow(e,s.getDate()+"."+(s.getMonth()+1)+".")}).join("")+
+      '</div><p class="hint">Wähle einen Tag im Kalender, um alle Termine zu sehen.</p>';
+  }
+  function monthHTML(m){
+    var first=new Date(year,m,1), days=new Date(year,m+1,0).getDate(), off=(first.getDay()+6)%7, total=0, cells="";
+    for(var i=0;i<off;i++)cells+='<span></span>';
+    for(var dd=1;dd<=days;dd++){
+      var d=new Date(year,m,dd), k=key(d), list=fl(k); total+=list.length;
+      var cls="dcell"+(d.getDay()%6===0?" we":"")+(list.some(function(e){return e.hl})?" hl":"")+(+d===+today?" today":"")+(d<today?" past":"");
+      cells+='<button type="button" class="'+cls+'" data-k="'+k+'" data-m="'+m+'" aria-pressed="'+(sel[m]===k)+'" aria-label="'+dd+'. '+MONL[m]+', '+list.length+' Termine"><span class="n">'+dd+'</span>'+
+        list.slice(0,2).map(function(e){return '<span class="tb'+(e.hl?' big':'')+'" style="--c:'+CATS[e.cat]+'" title="'+esc(e.title)+'">'+esc(e.title)+'</span>'}).join("")+
+        (list.length>2?'<span class="more">+'+(list.length-2)+' weitere</span>':'')+'</button>';
+    }
+    return '<div class="mhead"><h2>'+MONL[m]+'</h2><span>'+total+(total===1?' Termin':' Termine')+'</span></div>'+
+      '<div class="mgrid">'+WD.map(function(w){return '<span class="wd">'+w+'</span>'}).join("")+cells+'</div>'+
+      '<div class="mside" aria-live="polite">'+monthSide(m)+'</div>';
+  }
+  function listMonthHTML(m){
+    var days=new Date(year,m+1,0).getDate(), total=0, rows="";
+    for(var dd=1;dd<=days;dd++){
+      var d=new Date(year,m,dd), list=fl(key(d));
+      if(!list.length)continue; total+=list.length;
+      rows+='<div class="lday'+(+d===+today?' today':'')+(d<today?' past':'')+'"><div class="dl">'+(+d===+today?'Heute':DOW[d.getDay()])+' <b>'+dd+'.'+(m+1)+'.</b></div><div>'+
+        list.map(function(e){return evRow(e,e.t==="ganztägig"?"ganzt.":e.t).replace('<article class="ev">','<article class="ev'+(e.hl?' big':'')+'">')}).join("")+'</div></div>';
+    }
+    return '<div class="mhead"><h2>'+MONL[m]+'</h2><span>'+total+(total===1?' Termin':' Termine')+'</span></div><div>'+
+      (rows||'<p class="lempty">Keine passenden Termine im '+MONL[m]+'.</p>')+'</div>';
+  }
+  function renderYTools(){
+    $("modeMonth").setAttribute("aria-pressed",String(yf.mode==="monate"));
+    $("modeList").setAttribute("aria-pressed",String(yf.mode==="liste"));
+    $("ycats").innerHTML='<button class="chip" type="button" data-c="" aria-pressed="'+(!yf.cat)+'">Alles</button>'+
+      Object.keys(CATS).map(function(c){return '<button class="chip" type="button" data-c="'+c+'" aria-pressed="'+(yf.cat===c)+'" style="--c:'+CATS[c]+'"><span class="dot"></span>'+c+'</button>'}).join("");
+    $("ydists").innerHTML='<button class="chip" type="button" data-s="" aria-pressed="'+(!yf.dist)+'">Ganz Rostock</button>'+
+      DISTRICTS.map(function(s){return '<button class="chip" type="button" data-s="'+s+'" aria-pressed="'+(yf.dist===s)+'">'+s+'</button>'}).join("");
+  }
+  function renderMonths(){
+    var html="", n=0, asList=yf.mode==="liste";
+    for(var m=0;m<12;m++)html+='<section class="month'+(asList?' as-list':'')+'" id="monat-'+m+'" aria-label="'+MONL[m]+' '+year+'">'+(asList?listMonthHTML(m):monthHTML(m))+'</section>';
+    $("months").innerHTML=html;
+    Object.keys(yData).forEach(function(k){n+=fl(k).length});
+    $("ycount").innerHTML=filtered()?n+' passende Termine in '+year+'<button type="button" id="yreset">Filter zurücksetzen</button>':n+' Termine in '+year;
+    renderYTools();
+    spy();
+  }
+  function renderYear(){
+    yData=buildYear(year);
+    $("yTitle").textContent=year;$("yPrevL").textContent=year-1;$("yNextL").textContent=year+1;
+    renderMonths();
+    $("mchips").innerHTML=(year===today.getFullYear()?'<button type="button" class="mchip jump" data-go="'+today.getMonth()+'">Heute</button>':'')+
+      MSHORT.map(function(s,i){return '<button type="button" class="mchip" data-go="'+i+'" aria-current="false">'+s+'</button>'}).join("");
+    spy();
+  }
+  $("legend").innerHTML=Object.keys(CATS).map(function(c){return '<span><i class="dot" style="--c:'+CATS[c]+'"></i>'+c+'</span>'}).join("")+
+    '<span><i class="dot hlmark"></i>Großes Fest</span>';
+  function goMonth(m,smooth){var el=$("monat-"+m);if(el)el.scrollIntoView({behavior:smooth&&!matchMedia("(prefers-reduced-motion: reduce)").matches?"smooth":"auto",block:"start"})}
+  function measure(){
+    var h=document.querySelector(".top").offsetHeight, b=document.querySelector(".ybar");
+    document.documentElement.style.setProperty("--hdr",h+"px");
+    document.documentElement.style.setProperty("--stick",(h+(b.offsetHeight||52)+12)+"px");
+  }
+  function spy(){
+    if($("viewYear").hidden)return;
+    var lim=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--stick"))||120, cur=0;
+    for(var m=0;m<12;m++){var el=$("monat-"+m);if(el&&el.getBoundingClientRect().top<=lim+40)cur=m}
+    var chips=$("mchips").querySelectorAll(".mchip:not(.jump)");
+    curM=cur;
+    chips.forEach(function(c,i){c.setAttribute("aria-current",String(i===cur))});
+    var act=chips[cur];if(act){var bar=$("mchips"),l=act.offsetLeft-bar.offsetLeft;if(l<bar.scrollLeft||l+act.offsetWidth>bar.scrollLeft+bar.clientWidth)bar.scrollLeft=l-40}
+  }
+  window.addEventListener("scroll",spy,{passive:true});
+  window.addEventListener("resize",measure);
+  $("mchips").addEventListener("click",function(ev){var b=ev.target.closest(".mchip");if(b)goMonth(+b.dataset.go,true)});
+  $("months").addEventListener("click",function(ev){
+    var b=ev.target.closest(".dcell"), back=ev.target.closest("[data-back]");
+    if(b){var m=+b.dataset.m;sel[m]=sel[m]===b.dataset.k?null:b.dataset.k;$("monat-"+m).innerHTML=monthHTML(m)}
+    else if(back){var mm=+back.dataset.back;sel[mm]=null;$("monat-"+mm).innerHTML=monthHTML(mm)}
+  });
+  function setMode(md){
+    if(yf.mode===md)return;
+    var keep=curM; yf.mode=md;
+    try{localStorage.setItem("rw-mode",md)}catch(e){}
+    renderMonths(); goMonth(keep);
+  }
+  $("modeMonth").addEventListener("click",function(){setMode("monate")});
+  $("modeList").addEventListener("click",function(){setMode("liste")});
+  $("ycats").addEventListener("click",function(ev){var b=ev.target.closest(".chip");if(!b)return;yf.cat=b.dataset.c||null;renderMonths()});
+  $("ydists").addEventListener("click",function(ev){var b=ev.target.closest(".chip");if(!b)return;yf.dist=b.dataset.s||null;renderMonths()});
+  $("yq").addEventListener("input",function(){yf.q=this.value.trim().toLowerCase();renderMonths()});
+  $("ycount").addEventListener("click",function(ev){if(ev.target.id==="yreset"){yf.cat=null;yf.dist=null;yf.q="";$("yq").value="";renderMonths()}});
+  $("yPrev").addEventListener("click",function(){year--;sel={};renderYear();goMonth(0)});
+  $("yNext").addEventListener("click",function(){year++;sel={};renderYear();goMonth(year===today.getFullYear()?today.getMonth():0)});
+
+  /* ---------- Ansichten ---------- */
+  function route(){
+    var h=location.hash.slice(1), y=h==="jahr";
+    $("viewYear").hidden=!y;$("viewHome").hidden=y;
+    $("navYear").setAttribute("aria-current",y?"page":"false");
+    $("navWeek").setAttribute("aria-current",y?"false":"page");
+    measure();
+    if(y){renderYear();measure();goMonth(year===today.getFullYear()?today.getMonth():0)}
+    else if(h){var el=document.getElementById(h);if(el)el.scrollIntoView()}
+    else window.scrollTo(0,0);
+  }
+  window.addEventListener("hashchange",route);
+  route();
+})();
+</script>
+</body>
+</html>
