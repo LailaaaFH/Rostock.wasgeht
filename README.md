@@ -13,6 +13,11 @@ Veranstaltungskalender für Rostock: Was geht heute, diese Woche und im ganzen J
 
 `index.html` im Browser öffnen. Für GitHub Pages: Settings → Pages → Branch `main`, Ordner `/`.
 
-## Hinweis
+## Termine
 
-Alle Termine sind Beispieldaten für die Vorschau und noch keine echten Veranstaltungen.
+- `events.json` – alle Termine, gepflegt vom Prüfgremium (Sammler, Prüfer, Redaktion)
+- Auf der Seite erscheinen nur Termine mit `"status": "gruen"`
+- Testmodus: `?test=1` an die Adresse hängen, dann werden auch gelbe Termine (wartet auf Freigabe) angezeigt
+- Optionale Felder: `datum_bis`, `wochentage` (0 = So … 6 = Sa), `nur_gerade_tage`, `zusatzdaten`, `abgesagt`
+
+Lokal ansehen: Wegen `fetch` die Seite über einen kleinen Server öffnen (z. B. `python3 -m http.server`), nicht per Doppelklick.
