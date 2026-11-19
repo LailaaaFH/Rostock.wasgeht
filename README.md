@@ -8,6 +8,7 @@ Veranstaltungskalender für Rostock: Was geht heute, diese Woche und im ganzen J
   - **Diese Woche**: Tagesauswahl, Suche, Filter nach Kategorie und Stadtteil, Terminliste mit Haltestelle
   - **Jahreskalender** (`index.html#jahr`): Monatsansicht mit Terminbalken oder Listenansicht, gleiche Filter
   - **Termin eintragen**: Formular (noch nicht angebunden)
+- `fonts/` – lokal eingebundene Schriften (Big Shoulders Display, Instrument Sans, JetBrains Mono) als WOFF2 mit `fonts.css`; Lizenz: SIL Open Font License 1.1 (`OFL-*.txt`). Es werden keine Schriften von Google-Servern geladen.
 
 ## Ansehen
 
