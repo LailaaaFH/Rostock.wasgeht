@@ -222,6 +222,8 @@ footer .logo b{color:var(--brick)}
 .pend{display:inline-block;font-size:.68rem;font-weight:600;background:#ffe27a;color:#4a3a00;padding:2px 6px;border-radius:4px;vertical-align:middle}
 .etext{margin:.35rem 0 0;font-size:.88rem;line-height:1.45;opacity:.85}
 .ev h3 a{color:inherit;text-decoration:none}.ev h3 a:hover{text-decoration:underline}
+.soon{margin:1.4rem 0 .6rem;font-size:1rem}
+.soonmore{margin:.8rem 0 0}.soonmore a{color:inherit;font-weight:600}
 </style>
 </head>
 <body>
@@ -243,15 +245,11 @@ footer .logo b{color:var(--brick)}
     <div class="wrap">
       <div class="yhead">
         <div>
-          <div class="eyebrow">Jahreskalender</div>
-          <h1 id="yTitle">2026</h1>
-        </div>
-        <div class="ynav">
-          <button class="ybtn" type="button" id="yPrev">← <span id="yPrevL">2025</span></button>
-          <button class="ybtn" type="button" id="yNext"><span id="yNextL">2027</span> →</button>
+          <div class="eyebrow">Kalender · 24 Monate</div>
+          <h1 id="yTitle"></h1>
         </div>
       </div>
-      <p>Alle Termine des Jahres, Monat für Monat. Tippe auf einen Tag, um zu sehen, was dort los ist.</p>
+      <p>Alle Termine der nächsten 24 Monate, ab dem aktuellen Monat. Tippe auf einen Tag, um zu sehen, was dort los ist.</p>
       <div class="legend" id="legend"></div>
     </div>
   </section>
@@ -467,7 +465,21 @@ footer .logo b{color:var(--brick)}
     $("heroWhen").textContent=state.day===0?"heute":state.day===1?"morgen":"am "+DOWL[d.getDay()];
     $("result").textContent=items.length+(items.length===1?" Termin":" Termine")+(state.dist?" in "+state.dist:"");
     if(!items.length){
-      $("list").innerHTML='<div class="empty">Für diese Auswahl ist noch nichts eingetragen. <button type="button" id="reset">Filter zurücksetzen</button></div>';
+      var from=dateFor(state.day), seenT={}, up=OCC.filter(function(e){
+        if(e.date<=from)return false;
+        if(state.cat&&e.cat!==state.cat)return false;
+        if(state.dist&&e.dist!==state.dist)return false;
+        if(state.q&&(e.title+" "+e.venue+" "+e.dist+" "+e.cat).toLowerCase().indexOf(state.q)<0)return false;
+        if(seenT[e.title])return false; seenT[e.title]=1; return true;
+      }).sort(function(a,b){return a.date-b.date}).slice(0,6);
+      var head=(state.cat||state.dist||state.q)?'An diesem Tag passt nichts zu deinen Filtern. <button type="button" id="reset">Filter zurücksetzen</button>':'An diesem Tag ist noch nichts eingetragen.';
+      $("list").innerHTML='<div class="empty">'+head+'</div>'+(up.length?'<h3 class="soon">Demnächst in Rostock</h3>'+up.map(function(e){
+        var d=e.date, lbl=DOW[d.getDay()]+' '+d.getDate()+'.'+(d.getMonth()+1)+'.';
+        return '<article class="ev'+(e.gelb?' pending':'')+'"><time>'+lbl+'</time><div><h3>'+titleHTML(e)+'</h3>'+
+          '<div class="meta"><span>'+esc(e.venue)+' · '+esc(e.dist)+'</span><span>'+esc(e.t)+'</span>'+(e.range?'<span>'+esc(e.range)+'</span>':'')+'</div>'+
+          (e.text?'<p class="etext">'+esc(e.text)+'</p>':'')+'</div>'+
+          '<div class="side"><span class="cat" style="--c:'+CATS[e.cat]+'">'+e.cat+'</span><span class="price'+(e.price==="frei"?' free':'')+'">'+(e.price==="frei"?'Eintritt frei':esc(e.price))+'</span></div></article>';
+      }).join("")+'<p class="soonmore"><a href="#jahr">Alle Termine im Kalender ansehen →</a></p>':'');
       return;
     }
     $("list").innerHTML=items.map(function(e){
@@ -498,7 +510,8 @@ footer .logo b{color:var(--brick)}
   /* ---------- Jahreskalender ---------- */
   var WD=["Mo","Di","Mi","Do","Fr","Sa","So"];
   var MSHORT=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
-  var year=today.getFullYear(), yData={}, sel={}, curM=today.getMonth();
+  var NM=24, yData={}, sel={}, curM=0;
+  function ym(i){var d=new Date(today.getFullYear(),today.getMonth()+i,1);return [d.getFullYear(),d.getMonth()]}
   var yf={cat:null,dist:null,q:"",mode:"monate"};
   try{var sm=localStorage.getItem("rw-mode");if(sm==="liste")yf.mode="liste"}catch(e){}
   function pass(e){
@@ -518,9 +531,9 @@ footer .logo b{color:var(--brick)}
     return a.getMonth()===b.getMonth()?a.getDate()+".–"+b.getDate()+". "+MONL[b.getMonth()]
       :a.getDate()+". "+MONL[a.getMonth()]+" – "+b.getDate()+". "+MONL[b.getMonth()];
   }
-  function buildYear(Y){
+  function buildYear(){
     var map={};
-    OCC.forEach(function(o){if(o.date.getFullYear()!==Y)return;var k=key(o.date);(map[k]=map[k]||[]).push(o)});
+    OCC.forEach(function(o){var k=key(o.date);(map[k]=map[k]||[]).push(o)});
     Object.keys(map).forEach(function(k){map[k].sort(function(a,b){return (b.hl?1:0)-(a.hl?1:0)||(a.t<b.t?-1:1)})});
     return map;
   }
@@ -531,48 +544,51 @@ footer .logo b{color:var(--brick)}
       '<div class="side"><span class="cat" style="--c:'+CATS[e.cat]+'">'+e.cat+'</span></div></article>';
   }
   function monthSide(m){
+    var Y=ym(m)[0], M=ym(m)[1];
     var k=sel[m];
     if(k&&fl(k).length){
       var p=k.split("-"), d=new Date(+p[0],+p[1],+p[2]), list=fl(k);
-      return '<h3>'+DOWL[d.getDay()]+', '+d.getDate()+'. '+MONL[m]+'</h3><div class="list">'+
+      return '<h3>'+DOWL[d.getDay()]+', '+d.getDate()+'. '+MONL[M]+'</h3><div class="list">'+
         list.map(function(e){return evRow(e,e.t==="ganztägig"?"ganzt.":e.t)}).join("")+
-        '</div><p class="hint"><button type="button" data-back="'+m+'">Zurück zu den Höhepunkten im '+MONL[m]+'</button></p>';
+        '</div><p class="hint"><button type="button" data-back="'+m+'">Zurück zu den Höhepunkten im '+MONL[M]+'</button></p>';
     }
     var seen={}, hl=[];
     Object.keys(yData).forEach(function(kk){
-      if(+kk.split("-")[1]!==m)return;
+      var kp=kk.split("-");if(+kp[0]!==Y||+kp[1]!==M)return;
       fl(kk).forEach(function(e){if(e.hl&&!seen[e.title]){seen[e.title]=1;hl.push(e)}});
     });
     hl.sort(function(a,b){return a.s-b.s});
-    if(!hl.length)return '<h3>Im '+MONL[m]+'</h3><p class="hint" style="margin-top:0">'+(filtered()?'Keine großen Feste passen zu deinen Filtern. Wähle einen Tag im Kalender.':'Keine mehrtägigen Highlights in diesem Monat. Wähle einen Tag im Kalender.')+'</p>';
-    return '<h3>Höhepunkte im '+MONL[m]+'</h3><div class="list">'+
+    if(!hl.length)return '<h3>Im '+MONL[M]+'</h3><p class="hint" style="margin-top:0">'+(filtered()?'Keine großen Feste passen zu deinen Filtern. Wähle einen Tag im Kalender.':'Keine mehrtägigen Highlights in diesem Monat. Wähle einen Tag im Kalender.')+'</p>';
+    return '<h3>Höhepunkte im '+MONL[M]+'</h3><div class="list">'+
       hl.map(function(e){var s=e.s;return evRow(e,s.getDate()+"."+(s.getMonth()+1)+".")}).join("")+
       '</div><p class="hint">Wähle einen Tag im Kalender, um alle Termine zu sehen.</p>';
   }
   function monthHTML(m){
-    var first=new Date(year,m,1), days=new Date(year,m+1,0).getDate(), off=(first.getDay()+6)%7, total=0, cells="";
+    var Y=ym(m)[0], M=ym(m)[1];
+    var first=new Date(Y,M,1), days=new Date(Y,M+1,0).getDate(), off=(first.getDay()+6)%7, total=0, cells="";
     for(var i=0;i<off;i++)cells+='<span></span>';
     for(var dd=1;dd<=days;dd++){
-      var d=new Date(year,m,dd), k=key(d), list=fl(k); total+=list.length;
+      var d=new Date(Y,M,dd), k=key(d), list=fl(k); total+=list.length;
       var cls="dcell"+(d.getDay()%6===0?" we":"")+(list.some(function(e){return e.hl})?" hl":"")+(+d===+today?" today":"")+(d<today?" past":"");
-      cells+='<button type="button" class="'+cls+'" data-k="'+k+'" data-m="'+m+'" aria-pressed="'+(sel[m]===k)+'" aria-label="'+dd+'. '+MONL[m]+', '+list.length+' Termine"><span class="n">'+dd+'</span>'+
+      cells+='<button type="button" class="'+cls+'" data-k="'+k+'" data-m="'+m+'" aria-pressed="'+(sel[m]===k)+'" aria-label="'+dd+'. '+MONL[M]+', '+list.length+' Termine"><span class="n">'+dd+'</span>'+
         list.slice(0,2).map(function(e){return '<span class="tb'+(e.hl?' big':'')+'" style="--c:'+CATS[e.cat]+'" title="'+esc(e.title)+'">'+esc(e.title)+'</span>'}).join("")+
         (list.length>2?'<span class="more">+'+(list.length-2)+' weitere</span>':'')+'</button>';
     }
-    return '<div class="mhead"><h2>'+MONL[m]+'</h2><span>'+total+(total===1?' Termin':' Termine')+'</span></div>'+
+    return '<div class="mhead"><h2>'+MONL[M]+' '+Y+'</h2><span>'+total+(total===1?' Termin':' Termine')+'</span></div>'+
       '<div class="mgrid">'+WD.map(function(w){return '<span class="wd">'+w+'</span>'}).join("")+cells+'</div>'+
       '<div class="mside" aria-live="polite">'+monthSide(m)+'</div>';
   }
   function listMonthHTML(m){
-    var days=new Date(year,m+1,0).getDate(), total=0, rows="";
+    var Y=ym(m)[0], M=ym(m)[1];
+    var days=new Date(Y,M+1,0).getDate(), total=0, rows="";
     for(var dd=1;dd<=days;dd++){
-      var d=new Date(year,m,dd), list=fl(key(d));
+      var d=new Date(Y,M,dd), list=fl(key(d));
       if(!list.length)continue; total+=list.length;
-      rows+='<div class="lday'+(+d===+today?' today':'')+(d<today?' past':'')+'"><div class="dl">'+(+d===+today?'Heute':DOW[d.getDay()])+' <b>'+dd+'.'+(m+1)+'.</b></div><div>'+
+      rows+='<div class="lday'+(+d===+today?' today':'')+(d<today?' past':'')+'"><div class="dl">'+(+d===+today?'Heute':DOW[d.getDay()])+' <b>'+dd+'.'+(M+1)+'.</b></div><div>'+
         list.map(function(e){return evRow(e,e.t==="ganztägig"?"ganzt.":e.t).replace('<article class="ev">','<article class="ev'+(e.hl?' big':'')+'">')}).join("")+'</div></div>';
     }
-    return '<div class="mhead"><h2>'+MONL[m]+'</h2><span>'+total+(total===1?' Termin':' Termine')+'</span></div><div>'+
-      (rows||'<p class="lempty">Keine passenden Termine im '+MONL[m]+'.</p>')+'</div>';
+    return '<div class="mhead"><h2>'+MONL[M]+' '+Y+'</h2><span>'+total+(total===1?' Termin':' Termine')+'</span></div><div>'+
+      (rows||'<p class="lempty">Keine passenden Termine im '+MONL[M]+'.</p>')+'</div>';
   }
   function renderYTools(){
     $("modeMonth").setAttribute("aria-pressed",String(yf.mode==="monate"));
@@ -584,19 +600,21 @@ footer .logo b{color:var(--brick)}
   }
   function renderMonths(){
     var html="", n=0, asList=yf.mode==="liste";
-    for(var m=0;m<12;m++)html+='<section class="month'+(asList?' as-list':'')+'" id="monat-'+m+'" aria-label="'+MONL[m]+' '+year+'">'+(asList?listMonthHTML(m):monthHTML(m))+'</section>';
+    for(var m=0;m<NM;m++)html+='<section class="month'+(asList?' as-list':'')+'" id="monat-'+m+'" aria-label="'+MONL[ym(m)[1]]+' '+ym(m)[0]+'">'+(asList?listMonthHTML(m):monthHTML(m))+'</section>';
     $("months").innerHTML=html;
     Object.keys(yData).forEach(function(k){n+=fl(k).length});
-    $("ycount").innerHTML=filtered()?n+' passende Termine in '+year+'<button type="button" id="yreset">Filter zurücksetzen</button>':n+' Termine in '+year;
+    $("ycount").innerHTML=filtered()?n+' passende Termine in den nächsten 24 Monaten<button type="button" id="yreset">Filter zurücksetzen</button>':n+' Termine in den nächsten 24 Monaten';
     renderYTools();
     spy();
   }
   function renderYear(){
-    yData=buildYear(year);
-    $("yTitle").textContent=year;$("yPrevL").textContent=year-1;$("yNextL").textContent=year+1;
+    yData=buildYear();
+    var a=ym(0), z=ym(NM-1);
+    $("yTitle").textContent=MSHORT[a[1]]+" "+a[0]+" – "+MSHORT[z[1]]+" "+z[0];
     renderMonths();
-    $("mchips").innerHTML=(year===today.getFullYear()?'<button type="button" class="mchip jump" data-go="'+today.getMonth()+'">Heute</button>':'')+
-      MSHORT.map(function(s,i){return '<button type="button" class="mchip" data-go="'+i+'" aria-current="false">'+s+'</button>'}).join("");
+    var html='<button type="button" class="mchip jump" data-go="0">Heute</button>';
+    for(var i=0;i<NM;i++){var q=ym(i);html+='<button type="button" class="mchip" data-go="'+i+'" aria-current="false">'+MSHORT[q[1]]+(q[1]===0||i===0?' '+String(q[0]).slice(2):'')+'</button>'}
+    $("mchips").innerHTML=html;
     spy();
   }
   $("legend").innerHTML=Object.keys(CATS).map(function(c){return '<span><i class="dot" style="--c:'+CATS[c]+'"></i>'+c+'</span>'}).join("")+
@@ -610,7 +628,7 @@ footer .logo b{color:var(--brick)}
   function spy(){
     if($("viewYear").hidden)return;
     var lim=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--stick"))||120, cur=0;
-    for(var m=0;m<12;m++){var el=$("monat-"+m);if(el&&el.getBoundingClientRect().top<=lim+40)cur=m}
+    for(var m=0;m<NM;m++){var el=$("monat-"+m);if(el&&el.getBoundingClientRect().top<=lim+40)cur=m}
     var chips=$("mchips").querySelectorAll(".mchip:not(.jump)");
     curM=cur;
     chips.forEach(function(c,i){c.setAttribute("aria-current",String(i===cur))});
@@ -636,8 +654,6 @@ footer .logo b{color:var(--brick)}
   $("ydists").addEventListener("click",function(ev){var b=ev.target.closest(".chip");if(!b)return;yf.dist=b.dataset.s||null;renderMonths()});
   $("yq").addEventListener("input",function(){yf.q=this.value.trim().toLowerCase();renderMonths()});
   $("ycount").addEventListener("click",function(ev){if(ev.target.id==="yreset"){yf.cat=null;yf.dist=null;yf.q="";$("yq").value="";renderMonths()}});
-  $("yPrev").addEventListener("click",function(){year--;sel={};renderYear();goMonth(0)});
-  $("yNext").addEventListener("click",function(){year++;sel={};renderYear();goMonth(year===today.getFullYear()?today.getMonth():0)});
 
   /* ---------- Ansichten ---------- */
   function route(){
@@ -646,7 +662,7 @@ footer .logo b{color:var(--brick)}
     $("navYear").setAttribute("aria-current",y?"page":"false");
     $("navWeek").setAttribute("aria-current",y?"false":"page");
     measure();
-    if(y){renderYear();measure();goMonth(year===today.getFullYear()?today.getMonth():0)}
+    if(y){renderYear();measure();goMonth(0)}
     else if(h){var el=document.getElementById(h);if(el)el.scrollIntoView()}
     else window.scrollTo(0,0);
   }
