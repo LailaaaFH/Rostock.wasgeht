@@ -1,5 +1,5 @@
 {
-  "stand": "2026-11-23",
+  "stand": "2026-11-25",
   "termine": [
     {
       "titel": "Kammerkonzert – Beethoven, Schumann",
@@ -8,6 +8,22 @@
       "link": "https://kunsthallerostock.de/de/aktuelles/veranstaltungs-kalender",
       "grund": "Dublette von Index 337 (3. Kammerkonzert / Meisterhaft, Norddeutsche Philharmonie): gleicher Ort, gleiches Datum, gleiche Uhrzeit – dort zusammenführen.",
       "lauf": "2026-11-23"
+    },
+    {
+      "titel": "Liebe ohne Grenzen – Rechte ohne Ausnahmen (Diskussion zu queerer Geschichte und Menschenrechten)",
+      "datum": "2026-11-27",
+      "ort": null,
+      "link": "https://stadtgestalten.org/eiz/liebe-ohne-grenzen-rechte-ohne-ausnahmen/",
+      "grund": "Unvollständig: Ort und Uhrzeit fehlen (Terminseite nicht geöffnet) – beim nächsten Lauf mit Terminseite neu erfassen.",
+      "lauf": "2026-11-25"
+    },
+    {
+      "titel": "Adventsklönen Gemeinschaftliches Wohnen",
+      "datum": "2026-12-02",
+      "ort": null,
+      "link": "https://stadtgestalten.org/wohnprojekte/adventskloenen-gemeinschaftliches-wohnen/",
+      "grund": "Unvollständig: Ort fehlt; zudem eher Gruppentreffen mit Anmeldung per E-Mail statt öffentlicher Veranstaltung.",
+      "lauf": "2026-11-25"
     }
   ]
 }
