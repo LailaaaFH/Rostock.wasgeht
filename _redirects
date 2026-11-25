@@ -1,0 +1,10 @@
+# Nebendomains dauerhaft (301) auf die Hauptdomain weiterleiten, inklusive Pfad.
+# Die Hauptdomain rostock-wasgeht.de selbst wird hier nicht erfasst (keine Schleife).
+https://rostockwasgeht.de/*        https://rostock-wasgeht.de/:splat  301!
+http://rostockwasgeht.de/*         https://rostock-wasgeht.de/:splat  301!
+https://www.rostockwasgeht.de/*    https://rostock-wasgeht.de/:splat  301!
+http://www.rostockwasgeht.de/*     https://rostock-wasgeht.de/:splat  301!
+https://wasgeht-rostock.de/*       https://rostock-wasgeht.de/:splat  301!
+http://wasgeht-rostock.de/*        https://rostock-wasgeht.de/:splat  301!
+https://www.wasgeht-rostock.de/*   https://rostock-wasgeht.de/:splat  301!
+http://www.wasgeht-rostock.de/*    https://rostock-wasgeht.de/:splat  301!
